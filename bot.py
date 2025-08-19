@@ -11,8 +11,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-# Bot configuration
+# Bot configuration - Get TOKEN from environment variable
 TOKEN = os.environ.get('TOKEN', '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ')
+if not TOKEN:
+    logging.critical("No TOKEN provided. Set the TOKEN environment variable.")
+    exit(1)
+
 CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
 CHANNEL_ID = -1002860781709
 CHANNEL_TITLE = "عيادات الحروف"
@@ -27,7 +31,8 @@ def home():
     return "Bot is running!"
 
 def run_flask():
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
 
 def check_bot_permissions():
     """Verify bot has admin permissions in channel"""
