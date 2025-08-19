@@ -3,6 +3,16 @@ from telebot import types
 import logging
 import os
 
+# Bot configuration
+TOKEN = '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ'
+CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
+CHANNEL_ID = -1002860781709  # ID القناة الصحيح من /getid
+CHANNEL_TITLE = "عيادات الحروف"  # اسم القناة للتأكيد
+
+bot = telebot.TeleBot(TOKEN)
+
+
+
 if __name__ == '__main__':
     # احصل على البورت من متغير البيئة
     PORT = int(os.environ.get('PORT', 5000))
@@ -18,13 +28,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-# Bot configuration
-TOKEN = '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ'
-CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
-CHANNEL_ID = -1002860781709  # ID القناة الصحيح من /getid
-CHANNEL_TITLE = "عيادات الحروف"  # اسم القناة للتأكيد
-
-bot = telebot.TeleBot(TOKEN)
 
 def check_bot_permissions():
     """Verify bot has admin permissions in channel"""
