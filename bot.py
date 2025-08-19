@@ -2,32 +2,32 @@ import telebot
 from telebot import types
 import logging
 import os
+import threading
+from flask import Flask
 
-# Bot configuration
-TOKEN = '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ'
-CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
-CHANNEL_ID = -1002860781709  # ID القناة الصحيح من /getid
-CHANNEL_TITLE = "عيادات الحروف"  # اسم القناة للتأكيد
-
-bot = telebot.TeleBot(TOKEN)
-
-
-
-if __name__ == '__main__':
-    # احصل على البورت من متغير البيئة
-    PORT = int(os.environ.get('PORT', 5000))
-    
-    if check_bot_permissions():
-        # استخدم webhook بدلاً من polling
-        bot.remove_webhook()
-        bot.set_webhook(url="https://your-app-name.onrender.com/" + TOKEN)
-        bot.polling(none_stop=True, server_port=PORT)
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+# Bot configuration
+TOKEN = os.environ.get('TOKEN', '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ')
+CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
+CHANNEL_ID = -1002860781709
+CHANNEL_TITLE = "عيادات الحروف"
+
+bot = telebot.TeleBot(TOKEN)
+
+# Flask app setup
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
 
 def check_bot_permissions():
     """Verify bot has admin permissions in channel"""
@@ -55,6 +55,7 @@ def get_my_id(message):
         f"- اليوزر: @{user.username or 'غير متوفر'}",
         parse_mode="Markdown"
     )
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     """Enhanced welcome message with channel info"""
@@ -76,7 +77,7 @@ def send_welcome(message):
 def handle_voice(message):
     """Process voice messages with enhanced error handling"""
     if not check_bot_permissions():
-        bot.reply_to_message(
+        bot.reply_to(
             message,
             "⚠️ البوت لا يملك الصلاحيات الكافية في القناة. يرجى إضافته كمسؤول.",
             reply_markup=types.InlineKeyboardMarkup().add(
@@ -122,12 +123,15 @@ def handle_voice(message):
         logging.error(f"Voice processing error: {str(e)}")
 
 if __name__ == '__main__':
+    # Start Flask server in a separate thread
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
     try:
-        # التحقق الأولي
         logging.info(f"Starting bot for channel: {CHANNEL_TITLE} (ID: {CHANNEL_ID})")
         
         if check_bot_permissions():
-            bot.delete_webhook()
             bot.polling(none_stop=True, interval=2, timeout=60)
         else:
             logging.critical("Bot doesn't have required permissions! Shutting down.")
