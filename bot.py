@@ -3,6 +3,8 @@ from telebot import types
 import logging
 import os
 import threading
+import time
+import requests
 from flask import Flask
 
 # Configure logging
@@ -30,9 +32,39 @@ app = Flask(__name__)
 def home():
     return "Bot is running!"
 
+@app.route('/ping')
+def ping():
+    return "pong", 200
+
 def run_flask():
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
+
+def start_keepalive():
+    """Start a background thread to keep the service alive"""
+    def keepalive():
+        while True:
+            try:
+                # Get the Render app URL from environment variable
+                app_url = os.environ.get('RENDER_EXTERNAL_URL', '')
+                if app_url:
+                    # Send a ping to the /ping endpoint
+                    response = requests.get(f"{app_url}/ping")
+                    logging.info(f"Keepalive ping: {response.status_code}")
+                else:
+                    logging.warning("RENDER_EXTERNAL_URL not set, skipping ping")
+                
+                # Sleep for 10 minutes
+                time.sleep(600)
+                
+            except Exception as e:
+                logging.error(f"Keepalive error: {str(e)}")
+                time.sleep(60)
+    
+    thread = threading.Thread(target=keepalive)
+    thread.daemon = True
+    thread.start()
+    logging.info("Keepalive thread started")
 
 def check_bot_permissions():
     """Verify bot has admin permissions in channel"""
@@ -132,6 +164,9 @@ if __name__ == '__main__':
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
+    
+    # Start keepalive thread
+    start_keepalive()
     
     try:
         logging.info(f"Starting bot for channel: {CHANNEL_TITLE} (ID: {CHANNEL_ID})")
