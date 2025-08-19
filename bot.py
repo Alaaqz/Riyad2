@@ -1,0 +1,133 @@
+import telebot
+from telebot import types
+import logging
+import os
+
+if __name__ == '__main__':
+    # احصل على البورت من متغير البيئة
+    PORT = int(os.environ.get('PORT', 5000))
+    
+    if check_bot_permissions():
+        # استخدم webhook بدلاً من polling
+        bot.remove_webhook()
+        bot.set_webhook(url="https://your-app-name.onrender.com/" + TOKEN)
+        bot.polling(none_stop=True, server_port=PORT)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Bot configuration
+TOKEN = '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ'
+CHANNEL_LINK = 'https://t.me/+W0lpVpFhNLxjNTM0'
+CHANNEL_ID = -1002860781709  # ID القناة الصحيح من /getid
+CHANNEL_TITLE = "عيادات الحروف"  # اسم القناة للتأكيد
+
+bot = telebot.TeleBot(TOKEN)
+
+def check_bot_permissions():
+    """Verify bot has admin permissions in channel"""
+    try:
+        chat_member = bot.get_chat_member(CHANNEL_ID, bot.get_me().id)
+        if chat_member.status not in ['administrator', 'creator']:
+            logging.error("Bot is not admin in the channel!")
+            return False
+        
+        logging.info(f"Bot has {chat_member.status} permissions in {CHANNEL_TITLE}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Permission check failed: {str(e)}")
+        return False
+
+@bot.message_handler(commands=['myid'])
+def get_my_id(message):
+    user = message.from_user
+    bot.reply_to(
+        message,
+        f"🆔 معرفك الشخصي:\n"
+        f"- الرقم: `{user.id}`\n"
+        f"- الاسم: {user.first_name}\n"
+        f"- اليوزر: @{user.username or 'غير متوفر'}",
+        parse_mode="Markdown"
+    )
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    """Enhanced welcome message with channel info"""
+    welcome_msg = f"""
+    السلام عليكم ورحمة الله وبركاته 🌸
+
+    أهلاً بكِ يا {message.from_user.first_name} في بوت {CHANNEL_TITLE}.
+
+    📌 لإرسال تسجيل قرآن:
+    1. اضغط على ميكروفون
+    2. سجلي الوجه المطلوب
+    3. اكتبي اسمك في نص الرسالة
+
+    سيتم مراجعة التسجيل في: [قناة {CHANNEL_TITLE}]({CHANNEL_LINK})
+    """
+    bot.reply_to(message, welcome_msg, parse_mode="Markdown")
+
+@bot.message_handler(content_types=['voice'])
+def handle_voice(message):
+    """Process voice messages with enhanced error handling"""
+    if not check_bot_permissions():
+        bot.reply_to_message(
+            message,
+            "⚠️ البوت لا يملك الصلاحيات الكافية في القناة. يرجى إضافته كمسؤول.",
+            reply_markup=types.InlineKeyboardMarkup().add(
+                types.InlineKeyboardButton(
+                    text="إضافة البوت إلى القناة",
+                    url=f"https://t.me/{bot.get_me().username}?startchannel=true"
+                )
+            )
+        )
+        return
+
+    try:
+        # إرسال الصوت مع بيانات المستخدم
+        user = message.from_user
+        caption = (
+            f"تسجيل جديد من: {user.first_name}\n"
+            f"Username: @{user.username}\n"
+            f"User ID: {user.id}"
+        )
+
+        bot.send_voice(
+            chat_id=CHANNEL_ID,
+            voice=message.voice.file_id,
+            caption=caption,
+            parse_mode="Markdown"
+        )
+
+        # إرسال إشعار للمستخدمة
+        bot.reply_to(
+            message,
+            "✅ تم استلام تسجيلكِ بنجاح وسيتم مراجعته قريباً.",
+            reply_markup=types.ForceReply(selective=True)
+        )
+
+    except Exception as e:
+        error_msg = "❌ تعذر إرسال التسجيل. يرجى:"
+        if "Forbidden" in str(e):
+            error_msg += "\n- التأكد من إضافة البوت كمسؤول"
+        elif "Bad Request" in str(e):
+            error_msg += "\n- التحقق من اتصال الإنترنت"
+        
+        bot.reply_to(message, error_msg)
+        logging.error(f"Voice processing error: {str(e)}")
+
+if __name__ == '__main__':
+    try:
+        # التحقق الأولي
+        logging.info(f"Starting bot for channel: {CHANNEL_TITLE} (ID: {CHANNEL_ID})")
+        
+        if check_bot_permissions():
+            bot.delete_webhook()
+            bot.polling(none_stop=True, interval=2, timeout=60)
+        else:
+            logging.critical("Bot doesn't have required permissions! Shutting down.")
+            
+    except Exception as e:
+        logging.critical(f"Fatal error: {str(e)}")
