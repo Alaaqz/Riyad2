@@ -14,7 +14,7 @@ logging.basicConfig(
 )
 
 # Bot configuration - Get TOKEN from environment variable
-TOKEN = os.environ.get('TOKEN', '8221110385:AAHnbPhxpNlLhEaRVXtqf0C5j4RtiIkzglQ')
+TOKEN = os.environ.get('TOKEN', 'PUT_YOUR_TOKEN_HERE')
 if not TOKEN:
     logging.critical("No TOKEN provided. Set the TOKEN environment variable.")
     exit(1)
@@ -81,14 +81,22 @@ def check_bot_permissions():
         logging.error(f"Permission check failed: {str(e)}")
         return False
 
+def get_full_name(user):
+    """Helper function to return full name if available"""
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    if not full_name:
+        full_name = f"@{user.username}" if user.username else str(user.id)
+    return full_name
+
 @bot.message_handler(commands=['myid'])
 def get_my_id(message):
     user = message.from_user
+    full_name = get_full_name(user)
     bot.reply_to(
         message,
         f"🆔 معرفك الشخصي:\n"
         f"- الرقم: `{user.id}`\n"
-        f"- الاسم: {user.first_name}\n"
+        f"- الاسم: {full_name}\n"
         f"- اليوزر: @{user.username or 'غير متوفر'}",
         parse_mode="Markdown"
     )
@@ -96,10 +104,11 @@ def get_my_id(message):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     """Enhanced welcome message with channel info"""
+    full_name = get_full_name(message.from_user)
     welcome_msg = f"""
     السلام عليكم ورحمة الله وبركاته 🌸
 
-    أهلاً بكِ يا {message.from_user.first_name} في بوت {CHANNEL_TITLE}.
+    أهلاً بكِ يا {full_name} في بوت {CHANNEL_TITLE}.
 
     📌 لإرسال تسجيل قرآن:
     1. اضغط على ميكروفون
@@ -129,9 +138,10 @@ def handle_voice(message):
     try:
         # إرسال الصوت مع بيانات المستخدم
         user = message.from_user
+        full_name = get_full_name(user)
         caption = (
-            f"تسجيل جديد من: {user.first_name}\n"
-            f"Username: @{user.username}\n"
+            f"تسجيل جديد من: {full_name}\n"
+            f"Username: @{user.username or 'غير متوفر'}\n"
             f"User ID: {user.id}"
         )
 
