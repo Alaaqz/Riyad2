@@ -114,8 +114,8 @@ def send_welcome(message):
     1. اضغط على ميكروفون
     2. سجلي الوجه المطلوب
     3. اكتبي اسمك في نص الرسالة
+    سيتم مراجعة التسجيل في قناة عيادة الحروف، شكرا لكِ
 
-    سيتم مراجعة التسجيل في: [قناة {CHANNEL_TITLE}]({CHANNEL_LINK})
     """
     bot.reply_to(message, welcome_msg, parse_mode="Markdown")
 
